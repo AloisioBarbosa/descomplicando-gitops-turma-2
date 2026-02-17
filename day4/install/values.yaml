@@ -49,9 +49,13 @@ dashboard:
   
   # Ingress configuration (optional)
   ingress:
-    enabled: false
-    # hosts:
-    #   - argo-rollouts.local
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - rollouts.argocd.local
+    paths:
+      - /
+    pathType: Prefix
 
 # CRD configuration
 crds:
