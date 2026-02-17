@@ -1,0 +1,78 @@
+# kube-prometheus-stack values for Day 4
+
+fullnameOverride: prometheus
+
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector: {}
+    serviceMonitorNamespaceSelector: {}
+    podMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelector: {}
+    podMonitorNamespaceSelector: {}
+    retention: 7d
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - prometheus.argocd.local
+    paths:
+      - /
+    pathType: Prefix
+
+grafana:
+  enabled: true
+  adminPassword: admin
+  service:
+    type: ClusterIP
+  sidecar:
+    dashboards:
+      enabled: true
+      searchNamespace: ALL
+    datasources:
+      enabled: true
+  grafana.ini:
+    auth.anonymous:
+      enabled: true
+      org_role: Viewer
+    server:
+      root_url: http://grafana.argocd.local
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - grafana.argocd.local
+    paths:
+      - /
+    pathType: Prefix
+
+alertmanager:
+  enabled: true
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - alertmanager.argocd.local
+    paths:
+      - /
+    pathType: Prefix
+
+nodeExporter:
+  enabled: true
+
+kubeStateMetrics:
+  enabled: true
+
+# Disable for local clusters
+kubeEtcd:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeProxy:
+  enabled: false

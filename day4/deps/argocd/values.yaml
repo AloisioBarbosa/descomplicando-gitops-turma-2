@@ -1,0 +1,135 @@
+# Argo CD Helm values for Day 4
+
+global:
+  domain: argocd.argocd.local
+
+dex:
+  enabled: true
+
+server:
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hostname: argocd.argocd.local
+    paths:
+      - /
+    pathType: Prefix
+    annotations:
+      nginx.ingress.kubernetes.io/backend-protocol: HTTP
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 5s
+      additionalLabels:
+        release: prometheus
+
+configs:
+  params:
+    server.insecure: true
+    timeout.reconciliation: 500s
+    timeout.hard.reconciliation: 0
+    reposerver.parallelism.limit: 30
+
+  rbac:
+    create: true
+    policy.default: role:readonly
+    policy.csv: |
+      g, descomplicando-gitops-turma-2:devops, role:org-admin
+      p, role:org-admin, applications, *, */*, allow
+      p, role:org-admin, clusters, get, *, allow
+      p, role:org-admin, repositories, *, *, allow
+      p, role:org-admin, logs, get, *, allow
+      p, role:org-admin, exec, create, */*, allow
+  cm:
+    url: http://argocd.argocd.local:8080
+    dex.config: |
+      connectors:
+        - type: github
+          id: github
+          name: GitHub
+          config:
+            clientID: $github-secret:oidc.github.clientID
+            clientSecret: $github-secret:oidc.github.clientSecret
+            orgs:
+            - name: descomplicando-gitocd-gitops-turma-2
+
+controller:
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 512Mi
+    limits:
+      cpu: 1500m
+      memory: 1500Mi
+  extraArgs:
+    - --status-processors=20
+    - --operation-processors=10
+    - --kubectl-parallelism-limit=30
+    - --repo-server-timeout-seconds=60
+  env:
+    - name: ARGOCD_K8S_CLIENT_QPS
+      value: "150"
+    - name: ARGOCD_K8S_CLIENT_BURST
+      value: "300"
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 5s
+      additionalLabels:
+        release: prometheus
+
+repoServer:
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 768m
+      memory: 768Mi
+  extraArgs:
+    - --parallelismlimit=0
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 5s
+      additionalLabels:
+        release: prometheus
+
+applicationSet:
+  resources:
+    requests:
+      cpu: 512m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 768Mi
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 5s
+      additionalLabels:
+        release: prometheus
+
+notifications:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 5s
+      additionalLabels:
+        release: prometheus
+
+redis:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 5s
+      additionalLabels:
+        release: prometheus

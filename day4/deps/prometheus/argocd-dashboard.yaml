@@ -1,0 +1,142 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  argocd.json: |
+    {
+      "title": "Argo CD - Stress Test",
+      "uid": "argocd-stress",
+      "refresh": "5s",
+      "time": {"from": "now-30m", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "title": "Total Apps",
+          "type": "stat",
+          "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+          "targets": [{"expr": "count(argocd_app_info)", "refId": "A"}],
+          "fieldConfig": {"defaults": {"thresholds": {"steps": [{"color": "green", "value": null}]}}}
+        },
+        {
+          "id": 2,
+          "title": "Queue Depth",
+          "type": "stat",
+          "gridPos": {"h": 4, "w": 4, "x": 4, "y": 0},
+          "targets": [{"expr": "sum(workqueue_depth{name=~\"app_.*_queue\", job=\"argocd-application-controller-metrics\"})", "refId": "A"}],
+          "fieldConfig": {"defaults": {"thresholds": {"steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 10}, {"color": "red", "value": 50}]}}}
+        },
+        {
+          "id": 3,
+          "title": "Syncing",
+          "type": "stat",
+          "gridPos": {"h": 4, "w": 4, "x": 8, "y": 0},
+          "targets": [{"expr": "count(argocd_app_info{sync_status=\"Syncing\"}) or vector(0)", "refId": "A"}],
+          "fieldConfig": {"defaults": {"thresholds": {"steps": [{"color": "blue", "value": null}]}}}
+        },
+        {
+          "id": 4,
+          "title": "Out of Sync",
+          "type": "stat",
+          "gridPos": {"h": 4, "w": 4, "x": 12, "y": 0},
+          "targets": [{"expr": "count(argocd_app_info{sync_status=\"OutOfSync\"}) or vector(0)", "refId": "A"}],
+          "fieldConfig": {"defaults": {"thresholds": {"steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}}
+        },
+        {
+          "id": 5,
+          "title": "Healthy",
+          "type": "stat",
+          "gridPos": {"h": 4, "w": 4, "x": 16, "y": 0},
+          "targets": [{"expr": "count(argocd_app_info{health_status=\"Healthy\"}) or vector(0)", "refId": "A"}],
+          "fieldConfig": {"defaults": {"thresholds": {"steps": [{"color": "green", "value": null}]}}}
+        },
+        {
+          "id": 6,
+          "title": "Degraded",
+          "type": "stat",
+          "gridPos": {"h": 4, "w": 4, "x": 20, "y": 0},
+          "targets": [{"expr": "count(argocd_app_info{health_status=\"Degraded\"}) or vector(0)", "refId": "A"}],
+          "fieldConfig": {"defaults": {"thresholds": {"steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}}
+        },
+        {
+          "id": 10,
+          "title": "Workqueue Depth",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+          "targets": [
+            {"expr": "workqueue_depth{name=\"app_reconciliation_queue\", job=\"argocd-application-controller-metrics\"}", "legendFormat": "app_reconciliation", "refId": "A"},
+            {"expr": "workqueue_depth{name=\"app_operation_processing_queue\", job=\"argocd-application-controller-metrics\"}", "legendFormat": "app_operation", "refId": "B"},
+            {"expr": "workqueue_depth{name=\"project_reconciliation_queue\", job=\"argocd-application-controller-metrics\"}", "legendFormat": "project_reconciliation", "refId": "C"}
+          ]
+        },
+        {
+          "id": 11,
+          "title": "Reconciliation Rate (/min)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+          "targets": [{"expr": "sum(increase(argocd_app_reconcile_count[1m]))", "legendFormat": "reconciliations/min", "refId": "A"}]
+        },
+        {
+          "id": 12,
+          "title": "Reconciliation Latency",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+          "fieldConfig": {"defaults": {"unit": "s"}},
+          "targets": [
+            {"expr": "histogram_quantile(0.95, sum(rate(argocd_app_reconcile_bucket[5m])) by (le))", "legendFormat": "p95", "refId": "A"},
+            {"expr": "histogram_quantile(0.50, sum(rate(argocd_app_reconcile_bucket[5m])) by (le))", "legendFormat": "p50", "refId": "B"}
+          ]
+        },
+        {
+          "id": 13,
+          "title": "Sync Operations (total)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+          "targets": [
+            {"expr": "sum(argocd_app_sync_total) by (phase)", "legendFormat": "{{phase}} (total)", "refId": "A"},
+            {"expr": "sum(increase(argocd_app_sync_total[1m])) by (phase)", "legendFormat": "{{phase}} (/min)", "refId": "B"}
+          ]
+        },
+        {
+          "id": 14,
+          "title": "Git Requests",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
+          "targets": [
+            {"expr": "sum(increase(argocd_git_request_total[1m])) by (request_type)", "legendFormat": "{{request_type}} (/min)", "refId": "A"}
+          ]
+        },
+        {
+          "id": 15,
+          "title": "K8s API Requests",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20},
+          "targets": [
+            {"expr": "sum(increase(argocd_app_k8s_request_total[1m])) by (verb)", "legendFormat": "{{verb}} (/min)", "refId": "A"},
+            {"expr": "sum(increase(argocd_app_k8s_request_total[1m])) by (resource_kind)", "legendFormat": "{{resource_kind}}", "refId": "B"}
+          ]
+        },
+        {
+          "id": 16,
+          "title": "Cluster Resources Tracked",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 28},
+          "targets": [
+            {"expr": "sum(argocd_cluster_api_resource_objects)", "legendFormat": "total objects", "refId": "A"}
+          ]
+        },
+        {
+          "id": 17,
+          "title": "Redis Operations",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 28},
+          "targets": [
+            {"expr": "sum(increase(argocd_redis_request_total[1m])) by (failed)", "legendFormat": "failed={{failed}}", "refId": "A"}
+          ]
+        }
+      ],
+      "schemaVersion": 38
+    }
