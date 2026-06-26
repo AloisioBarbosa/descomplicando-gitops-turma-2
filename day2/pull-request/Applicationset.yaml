@@ -22,7 +22,7 @@ spec:
       name: 'bmi-service-{{.branch}}-{{.number}}'
     spec:
       source:
-        repoURL: 'https://github.com/bernardolsp/microservicos-argocd-treinamento.git'
+        repoURL: 'https://github.com/AloisioBarbosa/microservicos-argocd-treinamento.git'
         targetRevision: '{{.head_sha}}'
         path: helm/bmi-service
         helm:

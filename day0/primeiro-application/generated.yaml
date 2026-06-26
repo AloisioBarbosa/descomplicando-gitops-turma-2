@@ -10,7 +10,7 @@ spec:
   project: default
   source:
     path: bmi-calculator/k8s
-    repoURL: https://github.com/bernardolsp/microservicos-argocd-treinamento/
+    repoURL: https://github.com/AloisioBarbosa/microservicos-argocd-treinamento
     targetRevision: HEAD
   syncPolicy:
     syncOptions:

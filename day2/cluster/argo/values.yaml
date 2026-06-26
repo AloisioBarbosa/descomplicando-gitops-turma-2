@@ -1,5 +1,5 @@
 global:
-  domain: argocd.bernardolopes.com
+  domain: argocd.ajbarbosa.xyz
 
 # Server component configuration
 server:

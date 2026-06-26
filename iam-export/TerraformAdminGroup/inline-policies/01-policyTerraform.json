@@ -1,0 +1,111 @@
+{
+    "GroupName": "TerraformAdminGroup",
+    "PolicyName": "01-policyTerraform",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "PermissoesServicosAWS",
+                "Effect": "Allow",
+                "Action": [
+                    "s3:*",
+                    "dynamodb:*",
+                    "ec2:*",
+                    "ecs:*",
+                    "eks:*",
+                    "autoscaling:*",
+                    "application-autoscaling:*",
+                    "elasticloadbalancing:*",
+                    "rds:*",
+                    "elasticache:*",
+                    "elasticfilesystem:*",
+                    "emr-serverless:*",
+                    "logs:*",
+                    "cloudwatch:*",
+                    "kms:*",
+                    "secretsmanager:*",
+                    "ecr:*",
+                    "ssm:GetParameter",
+                    "ssm:GetParameters",
+                    "ssm:PutParameter",
+                    "ssm:*",
+                    "iam:CreatePolicyVersion",
+                    "iam:DeletePolicyVersion",
+                    "iam:GetPolicyVersion"
+                ],
+                "Resource": "*"
+            },
+            {
+                "Sid": "PermissoesGerenciamentoIAM",
+                "Effect": "Allow",
+                "Action": [
+                    "iam:CreateRole",
+                    "iam:DeleteRole",
+                    "iam:GetRole",
+                    "iam:UpdateRole",
+                    "iam:UpdateAssumeRolePolicy",
+                    "iam:TagRole",
+                    "iam:UntagRole",
+                    "iam:List*",
+                    "iam:CreatePolicy",
+                    "iam:DeletePolicy",
+                    "iam:GetPolicy*",
+                    "iam:AttachRolePolicy",
+                    "iam:DetachRolePolicy",
+                    "iam:PutRolePolicy",
+                    "iam:DeleteRolePolicy",
+                    "iam:TagPolicy",
+                    "iam:UntagPolicy",
+                    "iam:GetRolePolicy",
+                    "iam:CreateInstanceProfile",
+                    "iam:DeleteInstanceProfile",
+                    "iam:GetInstanceProfile",
+                    "iam:AddRoleToInstanceProfile",
+                    "iam:RemoveRoleFromInstanceProfile",
+                    "iam:CreateOpenIDConnectProvider",
+                    "iam:DeleteOpenIDConnectProvider",
+                    "iam:GetOpenIDConnectProvider",
+                    "iam:TagOpenIDConnectProvider",
+                    "iam:UntagOpenIDConnectProvider"
+                ],
+                "Resource": "*"
+            },
+            {
+                "Sid": "PassRoleSeguro",
+                "Effect": "Allow",
+                "Action": "iam:PassRole",
+                "Resource": "*",
+                "Condition": {
+                    "StringEquals": {
+                        "iam:PassedToService": [
+                            "ecs-tasks.amazonaws.com",
+                            "emr-serverless.amazonaws.com",
+                            "eks.amazonaws.com",
+                            "ec2.amazonaws.com",
+                            "lambda.amazonaws.com",
+                            "elasticloadbalancing.amazonaws.com"
+                        ]
+                    }
+                }
+            },
+            {
+                "Sid": "CriacaoSLRSegura",
+                "Effect": "Allow",
+                "Action": "iam:CreateServiceLinkedRole",
+                "Resource": "arn:aws:iam::*:role/aws-service-role/*",
+                "Condition": {
+                    "StringEquals": {
+                        "iam:AWSServiceName": [
+                            "eks.amazonaws.com",
+                            "eks-nodegroup.amazonaws.com",
+                            "elasticloadbalancing.amazonaws.com",
+                            "autoscaling.amazonaws.com",
+                            "spot.amazonaws.com",
+                            "ec2.amazonaws.com"
+                        ]
+                    }
+                }
+            }
+        ]
+    }
+}

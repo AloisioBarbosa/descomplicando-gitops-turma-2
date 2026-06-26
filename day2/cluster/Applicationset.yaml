@@ -17,7 +17,7 @@ spec:
     spec:
       project: default
       source:
-        repoURL: https://github.com/bernardolsp/microservicos-argocd-treinamento.git
+        repoURL: https://github.com/AloisioBarbosa/microservicos-argocd-treinamento.git
         targetRevision: HEAD
         path: helm/bmi-service
       destination:

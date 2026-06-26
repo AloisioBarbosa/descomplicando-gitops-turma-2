@@ -1,5 +1,5 @@
 global:
-  domain: argocd.bernardolopes.com
+  domain: argocd.ajbarbosa.xyz
 
 # Server component configuration
 server:
@@ -13,7 +13,7 @@ server:
       alb.ingress.kubernetes.io/target-type: ip
       alb.ingress.kubernetes.io/backend-protocol: HTTPS
       alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
-      alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:628042573059:certificate/57490cdc-4e7d-4e8e-9369-d3493a91d3be
+      alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:920278691034:certificate/30962d3f-3710-42b7-9f4a-7547389e50ea
       alb.ingress.kubernetes.io/scheme: internet-facing
       alb.ingress.kubernetes.io/group.name: "shared-alb"
   service:

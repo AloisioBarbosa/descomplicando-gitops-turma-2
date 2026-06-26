@@ -10,7 +10,7 @@ spec:
   - matrix:
       generators:
       - git:
-          repoURL: https://github.com/bernardolsp/microservicos-argocd-treinamento.git
+          repoURL: https://github.com/AloisioBarbosa/microservicos-argocd-treinamento.git
           revision: HEAD
           directories:
           - path: helm/*
@@ -24,7 +24,7 @@ spec:
     spec:
       project: default
       source:
-        repoURL: https://github.com/bernardolsp/microservicos-argocd-treinamento.git
+        repoURL: https://github.com/AloisioBarbosa/microservicos-argocd-treinamento.git
         targetRevision: HEAD
         path: '{{.path.path}}'
       destination:
