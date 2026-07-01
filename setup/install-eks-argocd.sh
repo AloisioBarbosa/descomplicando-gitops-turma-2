@@ -39,6 +39,13 @@ ARGOCD_DOMAIN="${ARGOCD_DOMAIN:-argocd.local}"
 ENABLE_INGRESS="${ENABLE_INGRESS:-false}"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
+# CRDs owned by the argo-cd Helm chart. Used to fix "orphaned CRD" ownership conflicts.
+ARGOCD_CRDS=(
+    "applications.argoproj.io"
+    "applicationsets.argoproj.io"
+    "appprojects.argoproj.io"
+)
+
 # Check if kubectl is installed
 if ! command -v kubectl &> /dev/null; then
     print_error "kubectl is not installed. Please run ./setup/install-prerequisites.sh first"
@@ -80,6 +87,39 @@ print_success "Cluster is accessible"
 echo ""
 
 # ============================================================
+# Step 0: Handle a namespace stuck in "Terminating" from a
+# previous failed/partial run (common cause of apparent
+# "namespace conflicts" when re-running this script)
+# ============================================================
+handle_stuck_namespace() {
+    local ns_phase
+    ns_phase=$(kubectl get namespace ${ARGOCD_NAMESPACE} -o jsonpath='{.status.phase}' 2>/dev/null || echo "")
+
+    if [ "$ns_phase" = "Terminating" ]; then
+        print_info "Namespace '${ARGOCD_NAMESPACE}' is stuck in Terminating state. Attempting to clear finalizers..."
+
+        kubectl get namespace ${ARGOCD_NAMESPACE} -o json \
+            | jq '.spec.finalizers = []' \
+            > /tmp/argocd-ns-fix.json 2>/dev/null || true
+
+        if [ -s /tmp/argocd-ns-fix.json ]; then
+            kubectl replace --raw "/api/v1/namespaces/${ARGOCD_NAMESPACE}/finalize" -f /tmp/argocd-ns-fix.json > /dev/null 2>&1 || true
+        fi
+
+        print_info "Waiting for namespace to fully terminate..."
+        for i in {1..30}; do
+            if ! kubectl get namespace ${ARGOCD_NAMESPACE} &> /dev/null; then
+                print_success "Namespace cleared"
+                break
+            fi
+            sleep 2
+        done
+    fi
+}
+
+handle_stuck_namespace
+
+# ============================================================
 # Step 1: Create ArgoCD namespace
 # ============================================================
 echo "================================================"
@@ -94,12 +134,60 @@ else
     print_success "Namespace '${ARGOCD_NAMESPACE}' created"
 fi
 
-# Label namespace for security policies
+# NOTE: switched from `restricted` to `baseline`. The `restricted` PSA
+# profile blocks pods (repo-server/redis) that don't set every
+# securityContext field exactly as required, which manifests as pods
+# stuck Pending/CrashLoop and looks like a "conflict" on re-run.
 kubectl label namespace ${ARGOCD_NAMESPACE} \
-    pod-security.kubernetes.io/enforce=restricted \
-    pod-security.kubernetes.io/audit=restricted \
-    pod-security.kubernetes.io/warn=restricted \
+    pod-security.kubernetes.io/enforce=baseline \
+    pod-security.kubernetes.io/audit=baseline \
+    pod-security.kubernetes.io/warn=baseline \
     --overwrite > /dev/null 2>&1 || true
+
+echo ""
+
+# ============================================================
+# Step 1.5: Fix orphaned ArgoCD CRD ownership
+#
+# If applications.argoproj.io / appprojects.argoproj.io /
+# applicationsets.argoproj.io already exist on the cluster but were
+# NOT created by this Helm release (e.g. leftover from a previous
+# failed install, or `crds.keep: true` from an earlier uninstall),
+# `helm install`/`helm upgrade` fails with:
+#   "invalid ownership metadata; annotation validation error:
+#    key 'meta.helm.sh/release-name' must equal 'argocd'"
+#
+# This adopts existing CRDs by stamping the annotations/labels Helm
+# expects, so install/upgrade succeeds without deleting any existing
+# Application/AppProject/ApplicationSet custom resources.
+# ============================================================
+echo "================================================"
+print_info "Checking ArgoCD CRD ownership"
+echo "================================================"
+echo ""
+
+for crd in "${ARGOCD_CRDS[@]}"; do
+    if kubectl get crd "${crd}" &> /dev/null; then
+        managed_by=$(kubectl get crd "${crd}" -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}' 2>/dev/null || echo "")
+        release_name=$(kubectl get crd "${crd}" -o jsonpath='{.metadata.annotations.meta\.helm\.sh/release-name}' 2>/dev/null || echo "")
+
+        if [ "$managed_by" = "Helm" ] && [ "$release_name" = "argocd" ]; then
+            print_info "CRD '${crd}' already owned by Helm release 'argocd'"
+        else
+            print_info "CRD '${crd}' exists but is not owned by this Helm release. Adopting it..."
+            kubectl annotate crd "${crd}" \
+                meta.helm.sh/release-name=argocd \
+                meta.helm.sh/release-namespace=${ARGOCD_NAMESPACE} \
+                --overwrite > /dev/null 2>&1
+            kubectl label crd "${crd}" \
+                app.kubernetes.io/managed-by=Helm \
+                --overwrite > /dev/null 2>&1
+            print_success "CRD '${crd}' adopted by Helm release 'argocd'"
+        fi
+    else
+        print_info "CRD '${crd}' does not exist yet, Helm will create it"
+    fi
+done
 
 echo ""
 

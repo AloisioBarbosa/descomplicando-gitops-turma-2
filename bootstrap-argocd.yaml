@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
+    app.kubernetes.io/managed-by: argocd-cm
+    app.kubernetes.io/instance-name: argocd-cm
+type: Opaque
+data:
+  admin.password: $2a$10$WS5J6j4bD.Z9r0K5r8aRZu9YvJx9h7z5K8P7mZ9a8b7d6c5e4f3g2h1i0j9k8l7m6n5o4p3q2r1s0t
+  admin.passwordMtime: "2026-06-30T22:30:00Z"
